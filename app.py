@@ -51,7 +51,7 @@ df = charger_donnees()
 
 # --- PAGE 0 : ACCUEIL ---
 if menu == "Accueil":
-    st.write("### PlantQuizz")
+    st.write("### 🌱PlantQuiz🌱")
     st.write("Que veux-tu faire aujourd'hui ?")
     
     # On crée deux colonnes pour aligner les boutons
@@ -193,5 +193,6 @@ elif menu == "Ma Collection":
     st.header("Mon Herbier Numérique")
 
     st.dataframe(df)
+
 
 
