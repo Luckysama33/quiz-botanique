@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import random
+import time
 
 # --- CONFIGURATION ---
 FILE_CSV = "plantes.csv"
@@ -98,11 +99,24 @@ elif menu == "Ajouter une plante":
                 liste_chemins = []
                 
                 # On boucle sur toutes les photos envoyées
-                for photo in photos:
-                    # On force le slash / pour la compatibilité Windows/Web
-                    photo_path = f"{IMG_FOLDER}/{photo.name}"
+if nom and genre and photos:
+                liste_chemins = []
+                
+                # On boucle sur toutes les photos envoyées
+                for i, photo in enumerate(photos):
+                    # 1. On récupère l'extension du fichier (ex: .jpg)
+                    extension = os.path.splitext(photo.name)[1]
                     
-                    # Sauvegarde physique
+                    # 2. On crée un nom propre : Genre_Espece_Numero_Timestamp.jpg
+                    # Le timestamp (temps en secondes) évite d'écraser une image si on en ajoute une plus tard
+                    nom_fichier_propre = f"{genre}_{espece}_{i}_{int(time.time())}{extension}"
+                    
+                    # 3. On enlève les espaces éventuels dans le nom pour éviter les bugs
+                    nom_fichier_propre = nom_fichier_propre.replace(" ", "_")
+                    
+                    photo_path = f"{IMG_FOLDER}/{nom_fichier_propre}"
+                    
+                    # Sauvegarde physique avec le nouveau nom
                     with open(photo_path, "wb") as f:
                         f.write(photo.getbuffer())
                     
@@ -193,6 +207,7 @@ elif menu == "Ma Collection":
     st.header("Mon Herbier Numérique")
 
     st.dataframe(df)
+
 
 
 
