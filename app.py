@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import random
-import time
+import time  
 
 # --- CONFIGURATION ---
 FILE_CSV = "plantes.csv"
@@ -25,23 +25,22 @@ def sauvegarder_donnees(df):
     """Sauvegarde le tableau dans le fichier CSV"""
     df.to_csv(FILE_CSV, index=False)
 
-# --- INTERFACE PRINCIPALE ---
-
-# --- NAVIGATION ET ETATS ---
+# --- GESTION DE LA NAVIGATION (SESSION STATE) ---
 
 # 1. On initialise la page par défaut si elle n'existe pas
 if 'navigation' not in st.session_state:
     st.session_state['navigation'] = 'Accueil'
 
-# 2. Fonctions pour changer de page via les boutons
+# 2. Fonctions pour changer de page via les boutons de l'accueil
 def aller_au_quiz():
     st.session_state['navigation'] = 'Mode Quiz'
 
 def aller_a_ajout():
     st.session_state['navigation'] = 'Ajouter une plante'
 
-# 3. Le Menu Latéral (Connecté à la mémoire 'navigation')
-# Le paramètre 'key' lie ce menu à la variable st.session_state['navigation']
+# --- INTERFACE PRINCIPALE ---
+
+# Le menu latéral est connecté à la variable 'navigation'
 menu = st.sidebar.radio(
     "Menu", 
     ["Accueil", "Ajouter une plante", "Mode Quiz", "Ma Collection"],
@@ -50,44 +49,52 @@ menu = st.sidebar.radio(
 
 df = charger_donnees()
 
-# --- PAGE 0 : ACCUEIL ---
+# ==========================================
+# PAGE 0 : ACCUEIL
+# ==========================================
 if menu == "Accueil":
-    st.write("### 🌱PlantQuiz🌱")
-    st.write("Que veux-tu faire aujourd'hui ?")
+    st.title("🌿 Mon Quiz Botanique")
+    st.write("### Bienvenue dans ton outil de révision !")
+    st.write("C'est l'heure de pratiquer. Que veux-tu faire ?")
+    
+    st.divider()
     
     # On crée deux colonnes pour aligner les boutons
     col1, col2 = st.columns(2)
     
     with col1:
-        # Un grand bouton pour le Quiz
         st.info("🎓 **S'entraîner**")
-        st.write("Teste tes connaissances")
+        st.write("Teste tes connaissances sur les plantes enregistrées.")
         # Le bouton déclenche la fonction 'aller_au_quiz'
         st.button("Lancer le Quiz ➡️", on_click=aller_au_quiz, use_container_width=True)
 
     with col2:
-        # Un grand bouton pour l'Ajout
         st.success("🌱 **Enrichir**")
         st.write("Ajoute une nouvelle plante avec ses photos.")
         # Le bouton déclenche la fonction 'aller_a_ajout'
         st.button("Ajouter une fiche ➕", on_click=aller_a_ajout, use_container_width=True)
 
-    # Petit résumé en bas
     st.divider()
+    # Petit résumé en bas
     st.metric(label="Plantes dans ta collection", value=len(df))
 
-# --- PAGE 1 : AJOUTER UNE PLANTE ---
-elif menu == "Ajouter une plante":
 
+# ==========================================
+# PAGE 1 : AJOUTER UNE PLANTE
+# ==========================================
+elif menu == "Ajouter une plante":
     st.header("Ajouter une nouvelle fiche")
     
     with st.form("ajout_plante"):
-        nom = st.text_input("Nom Vernaculaire (ex: Chêne rouvre)")
-        genre = st.text_input("Genre (ex: Quercus)")
-        espece = st.text_input("Espèce (ex: robur)")
-        famille = st.text_input("Famille (ex: Fagaceae)")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            nom = st.text_input("Nom Vernaculaire (ex: Chêne rouvre)")
+            famille = st.text_input("Famille (ex: Fagaceae)")
+        with col_b:
+            genre = st.text_input("Genre (ex: Quercus)")
+            espece = st.text_input("Espèce (ex: robur)")
         
-        # MODIFICATION ICI : On accepte plusieurs fichiers
+        # Upload multiple
         photos = st.file_uploader("Photos (Feuille, Port, Ecorce...)", 
                                   type=["jpg", "png", "jpeg"], 
                                   accept_multiple_files=True)
@@ -99,30 +106,27 @@ elif menu == "Ajouter une plante":
                 liste_chemins = []
                 
                 # On boucle sur toutes les photos envoyées
-if nom and genre and photos:
-                liste_chemins = []
-                
-                # On boucle sur toutes les photos envoyées
                 for i, photo in enumerate(photos):
-                    # 1. On récupère l'extension du fichier (ex: .jpg)
+                    # 1. Récupérer l'extension (.jpg)
                     extension = os.path.splitext(photo.name)[1]
                     
-                    # 2. On crée un nom propre : Genre_Espece_Numero_Timestamp.jpg
-                    # Le timestamp (temps en secondes) évite d'écraser une image si on en ajoute une plus tard
+                    # 2. Créer un nom propre : Genre_Espece_Index_Timestamp.jpg
+                    # Le timestamp évite les doublons si tu ajoutes la même plante plus tard
                     nom_fichier_propre = f"{genre}_{espece}_{i}_{int(time.time())}{extension}"
                     
-                    # 3. On enlève les espaces éventuels dans le nom pour éviter les bugs
+                    # 3. Nettoyage (pas d'espaces)
                     nom_fichier_propre = nom_fichier_propre.replace(" ", "_")
                     
+                    # 4. Chemin final (avec slash / pour compatibilité)
                     photo_path = f"{IMG_FOLDER}/{nom_fichier_propre}"
                     
-                    # Sauvegarde physique avec le nouveau nom
+                    # Sauvegarde physique
                     with open(photo_path, "wb") as f:
                         f.write(photo.getbuffer())
                     
                     liste_chemins.append(photo_path)
                 
-                # On joint les chemins avec un point-virgule
+                # On joint les chemins avec un point-virgule pour le CSV
                 images_string = ";".join(liste_chemins)
                 
                 # Ajouter au tableau
@@ -131,28 +135,34 @@ if nom and genre and photos:
                     "Genre": [genre],
                     "Espece": [espece],
                     "Famille": [famille],
-                    "Image": [images_string] # On stocke la liste sous forme de texte
+                    "Image": [images_string]
                 })
                 df = pd.concat([df, new_data], ignore_index=True)
                 sauvegarder_donnees(df)
-                st.success(f"La plante {nom} a été ajoutée avec {len(photos)} photos !")
+                st.success(f"✅ La plante {nom} a été ajoutée avec {len(photos)} photos !")
             else:
-                st.error("Il manque des infos ou des photos !")
+                st.error("⚠️ Il manque des infos (Nom, Genre ou Photos) !")
 
-# --- PAGE 2 : MODE QUIZ ---
+
+# ==========================================
+# PAGE 2 : MODE QUIZ
+# ==========================================
 elif menu == "Mode Quiz":
     st.header("🔎 Reconnaissance")
     
     if len(df) < 4:
-        st.warning("Il faut au moins 4 plantes dans la base pour lancer un Quiz QCM !")
+        st.warning("⚠️ Il faut au moins 4 plantes dans la base pour lancer un Quiz QCM !")
+        st.info("Va dans l'onglet 'Ajouter une plante' pour commencer ta collection.")
     else:
-        # Initialiser une question si elle n'existe pas encore dans la session
+        # Initialiser une question si elle n'existe pas encore
         if 'bon_reponse' not in st.session_state:
             # Choisir une plante au hasard
             ligne_plante = df.sample(1).iloc[0]
             st.session_state['bon_reponse'] = ligne_plante
-            # Choisir 3 mauvaises réponses
+            
+            # Choisir 3 mauvaises réponses (distracteurs)
             distracteurs = df[df.index != ligne_plante.name].sample(3)
+            
             # Mélanger les choix
             choix = [ligne_plante] + [d for _, d in distracteurs.iterrows()]
             random.shuffle(choix)
@@ -162,53 +172,61 @@ elif menu == "Mode Quiz":
         # Afficher la question
         plante_mystere = st.session_state['bon_reponse']
         
-        # Afficher l'image
-        
-        # Récupérer la chaîne des images (ex: "img1.jpg;img2.jpg")
+        # --- GESTION DE L'IMAGE HASARDEUSE ---
         raw_images = str(plante_mystere["Image"])
-        
-        # On coupe la chaîne au niveau des points-virgules pour faire une liste
+        # On sépare les images s'il y en a plusieurs (séparateur ;)
         if ";" in raw_images:
             liste_images = raw_images.split(";")
         else:
-            liste_images = [raw_images] # Cas où il n'y a qu'une seule image
+            liste_images = [raw_images]
             
-        # On choisit UNE image au hasard parmi celles de la plante
-        image_a_afficher = random.choice(liste_images)
-
-        # Afficher l'image
+        # On choisit UNE image au hasard parmi celles de la plante pour ce tour
+        # On utilise une "clé" dans session_state pour que l'image ne change pas quand on clique sur un bouton
+        if 'image_courante' not in st.session_state:
+             st.session_state['image_courante'] = random.choice(liste_images)
+        
+        # Affichage
         try:
-            st.image(image_a_afficher, width=400)
+            st.image(st.session_state['image_courante'], width=400)
         except:
-            st.error(f"Image introuvable : {image_a_afficher}")
+            st.error(f"Image introuvable : {st.session_state['image_courante']}")
 
         st.write("### Quel est le nom latin de cette plante ?")
 
-        # Afficher les boutons de réponse
+        # Afficher les boutons de réponse en grille (2x2)
         col1, col2 = st.columns(2)
         for i, choix in enumerate(st.session_state['choix']):
             nom_complet = f"{choix['Genre']} {choix['Espece']}"
-            bouton = col1.button(nom_complet, key=i) if i % 2 == 0 else col2.button(nom_complet, key=i)
             
-            if bouton:
+            # On place les boutons : pairs à gauche, impairs à droite
+            zone = col1 if i % 2 == 0 else col2
+            
+            # Si on clique sur un bouton...
+            if zone.button(nom_complet, key=i, use_container_width=True):
                 st.session_state['repondu'] = True
+                
+                # Vérification
                 if choix['Vernaculaire'] == plante_mystere['Vernaculaire']:
-                    st.success(f"BRAVO ! C'est bien {plante_mystere['Genre']} {plante_mystere['Espece']} ({plante_mystere['Vernaculaire']})")
+                    st.balloons() # Petite animation sympa
+                    st.success(f"✅ BRAVO ! C'est bien *{plante_mystere['Genre']} {plante_mystere['Espece']}* ({plante_mystere['Vernaculaire']})")
+                    st.info(f"Famille : {plante_mystere['Famille']}")
                 else:
-                    st.error(f"Raté... C'était {plante_mystere['Genre']} {plante_mystere['Espece']}")
+                    st.error(f"❌ Raté... C'était *{plante_mystere['Genre']} {plante_mystere['Espece']}*")
         
+        # Bouton Suivant (n'apparaît que si on a répondu)
         if st.session_state['repondu']:
-            if st.button("Question Suivante"):
+            st.write("---")
+            if st.button("Question Suivante ➡️"):
+                # On efface les variables de session pour forcer une nouvelle question
                 del st.session_state['bon_reponse']
-                st.rerun()
+                del st.session_state['image_courante']
+                st.rerun() # On recharge la page
 
-# --- PAGE 3 : MA COLLECTION ---
+
+# ==========================================
+# PAGE 3 : MA COLLECTION
+# ==========================================
 elif menu == "Ma Collection":
     st.header("Mon Herbier Numérique")
-
+    st.write(f"Tu as **{len(df)}** plantes enregistrées.")
     st.dataframe(df)
-
-
-
-
-
