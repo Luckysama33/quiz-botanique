@@ -26,14 +26,58 @@ def sauvegarder_donnees(df):
 
 # --- INTERFACE PRINCIPALE ---
 
-st.title("🌿 Mon Quiz Botanique")
+# --- NAVIGATION ET ETATS ---
 
-# Barre latérale pour la navigation
-menu = st.sidebar.radio("Menu", ["Ajouter une plante", "Mode Quiz", "Ma Collection"])
+# 1. On initialise la page par défaut si elle n'existe pas
+if 'navigation' not in st.session_state:
+    st.session_state['navigation'] = 'Accueil'
+
+# 2. Fonctions pour changer de page via les boutons
+def aller_au_quiz():
+    st.session_state['navigation'] = 'Mode Quiz'
+
+def aller_a_ajout():
+    st.session_state['navigation'] = 'Ajouter une plante'
+
+# 3. Le Menu Latéral (Connecté à la mémoire 'navigation')
+# Le paramètre 'key' lie ce menu à la variable st.session_state['navigation']
+menu = st.sidebar.radio(
+    "Menu", 
+    ["Accueil", "Ajouter une plante", "Mode Quiz", "Ma Collection"],
+    key='navigation'
+)
+
 df = charger_donnees()
 
+# --- PAGE 0 : ACCUEIL ---
+if menu == "Accueil":
+    st.write("### Bienvenue dans ton outil de révision !")
+    st.write("Que veux-tu faire aujourd'hui ?")
+    
+    # On crée deux colonnes pour aligner les boutons
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Un grand bouton pour le Quiz
+        st.info("🎓 **S'entraîner**")
+        st.write("Teste tes connaissances sur les plantes enregistrées.")
+        # Le bouton déclenche la fonction 'aller_au_quiz'
+        st.button("Lancer le Quiz ➡️", on_click=aller_au_quiz, use_container_width=True)
+
+    with col2:
+        # Un grand bouton pour l'Ajout
+        st.success("🌱 **Enrichir**")
+        st.write("Ajoute une nouvelle plante avec ses photos.")
+        # Le bouton déclenche la fonction 'aller_a_ajout'
+        st.button("Ajouter une fiche ➕", on_click=aller_a_ajout, use_container_width=True)
+
+    # Petit résumé en bas
+    st.divider()
+    st.metric(label="Plantes dans ta collection", value=len(df))
+
 # --- PAGE 1 : AJOUTER UNE PLANTE ---
-if menu == "Ajouter une plante":
+elif menu == "Ajouter une plante":
+
     st.header("Ajouter une nouvelle fiche")
     
     with st.form("ajout_plante"):
@@ -149,3 +193,4 @@ elif menu == "Ma Collection":
     st.header("Mon Herbier Numérique")
 
     st.dataframe(df)
+
