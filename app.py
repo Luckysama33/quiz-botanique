@@ -53,7 +53,7 @@ df = charger_donnees()
 # PAGE 0 : ACCUEIL
 # ==========================================
 if menu == "Accueil":
-    st.title("🌿 Mon Quiz Botanique")
+    st.title("🌿PlantQuiz🌿")
     st.write("### Bienvenue dans ton outil de révision !")
     st.write("C'est l'heure de pratiquer. Que veux-tu faire ?")
     
@@ -64,7 +64,7 @@ if menu == "Accueil":
     
     with col1:
         st.info("🎓 **S'entraîner**")
-        st.write("Teste tes connaissances sur les plantes enregistrées.")
+        st.write("Teste tes connaissances.")
         # Le bouton déclenche la fonction 'aller_au_quiz'
         st.button("Lancer le Quiz ➡️", on_click=aller_au_quiz, use_container_width=True)
 
@@ -230,3 +230,4 @@ elif menu == "Ma Collection":
     st.header("Mon Herbier Numérique")
     st.write(f"Tu as **{len(df)}** plantes enregistrées.")
     st.dataframe(df)
+
