@@ -41,30 +41,45 @@ if menu == "Ajouter une plante":
         genre = st.text_input("Genre (ex: Quercus)")
         espece = st.text_input("Espèce (ex: robur)")
         famille = st.text_input("Famille (ex: Fagaceae)")
-        photo = st.file_uploader("Photo de la plante", type=["jpg", "png", "jpeg"])
+        
+        # MODIFICATION ICI : On accepte plusieurs fichiers
+        photos = st.file_uploader("Photos (Feuille, Port, Ecorce...)", 
+                                  type=["jpg", "png", "jpeg"], 
+                                  accept_multiple_files=True)
         
         submit = st.form_submit_button("Enregistrer la plante")
         
         if submit:
-            if nom and genre and photo:
-                # 1. Sauvegarder l'image
-                photo_path = os.path.join(IMG_FOLDER, photo.name)
-                with open(photo_path, "wb") as f:
-                    f.write(photo.getbuffer())
+            if nom and genre and photos:
+                liste_chemins = []
                 
-                # 2. Ajouter au tableau
+                # On boucle sur toutes les photos envoyées
+                for photo in photos:
+                    # On force le slash / pour la compatibilité Windows/Web
+                    photo_path = f"{IMG_FOLDER}/{photo.name}"
+                    
+                    # Sauvegarde physique
+                    with open(photo_path, "wb") as f:
+                        f.write(photo.getbuffer())
+                    
+                    liste_chemins.append(photo_path)
+                
+                # On joint les chemins avec un point-virgule
+                images_string = ";".join(liste_chemins)
+                
+                # Ajouter au tableau
                 new_data = pd.DataFrame({
                     "Vernaculaire": [nom],
                     "Genre": [genre],
                     "Espece": [espece],
                     "Famille": [famille],
-                    "Image": [photo_path]
+                    "Image": [images_string] # On stocke la liste sous forme de texte
                 })
                 df = pd.concat([df, new_data], ignore_index=True)
                 sauvegarder_donnees(df)
-                st.success(f"La plante {nom} a été ajoutée !")
+                st.success(f"La plante {nom} a été ajoutée avec {len(photos)} photos !")
             else:
-                st.error("Il manque des infos (Nom, Genre ou Photo) !")
+                st.error("Il manque des infos ou des photos !")
 
 # --- PAGE 2 : MODE QUIZ ---
 elif menu == "Mode Quiz":
@@ -90,10 +105,24 @@ elif menu == "Mode Quiz":
         plante_mystere = st.session_state['bon_reponse']
         
         # Afficher l'image
+        
+        # Récupérer la chaîne des images (ex: "img1.jpg;img2.jpg")
+        raw_images = str(plante_mystere["Image"])
+        
+        # On coupe la chaîne au niveau des points-virgules pour faire une liste
+        if ";" in raw_images:
+            liste_images = raw_images.split(";")
+        else:
+            liste_images = [raw_images] # Cas où il n'y a qu'une seule image
+            
+        # On choisit UNE image au hasard parmi celles de la plante
+        image_a_afficher = random.choice(liste_images)
+
+        # Afficher l'image
         try:
-            st.image(plante_mystere["Image"], width=400)
+            st.image(image_a_afficher, width=400)
         except:
-            st.error("Image introuvable.")
+            st.error(f"Image introuvable : {image_a_afficher}")
 
         st.write("### Quel est le nom latin de cette plante ?")
 
@@ -118,4 +147,5 @@ elif menu == "Mode Quiz":
 # --- PAGE 3 : MA COLLECTION ---
 elif menu == "Ma Collection":
     st.header("Mon Herbier Numérique")
+
     st.dataframe(df)
